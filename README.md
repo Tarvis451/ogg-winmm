@@ -1,13 +1,20 @@
 # ogg-winmm CD Audio Emulator
 
-This project (originally by Hifi) uses .ogg music files on the disk
+This project (originally by Hifi and forked by Tarvis451) uses .ogg music files on the disk
 to emulate CD tracks, replacing the need otohave a CD in the drive
 to play music in certain games. Good Old Games uses a modified version
 for several of their games. 
 
-It has gone unmaintained, so I took it upon myself to solve a couple issues,
-namely making it work on Windows 10. Good Old Games has fixed their own version,
-but it's not as useful without the source available, so I fixed it myself as well.
+WHAT'S NEW IN THIS FORK?:
+
+- Implemented partially mciSendStringA to support more games (Tested on Ultim@te Race Pro)
+- Easier to implement token-based commands in fake_mciSendStringA
+- Added missing "joyConfigChanged" function in stubs.c
+- Fixed some minor bugs
+
+WINDOWS 10 SUPPORT:
+
+Thanks to Tarvis451 the ogg-winmm is working on Windows 10 without any issues.
 
 BUILDING:
 

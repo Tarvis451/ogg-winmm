@@ -976,6 +976,14 @@ MMRESULT WINAPI fake_timeEndPeriod(UINT a0)
     return (*funcp)(a0);
 }
 
+MMRESULT  WINAPI fake_joyConfigChanged(DWORD dwFlags)
+{
+	static MMRESULT (WINAPI *funcp)(DWORD dwFlags);
+	if (funcp == NULL)
+		funcp = (void*)GetProcAddress(loadRealDLL(), "joyConfigChanged");
+    return (*funcp)(dwFlags);
+}
+
 UINT WINAPI fake_joyGetNumDevs()
 {
     static UINT(WINAPI *funcp)() = NULL;

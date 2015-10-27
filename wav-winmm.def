@@ -12,6 +12,7 @@ EXPORTS
     DriverCallback                   = fake_DriverCallback
     DrvGetModuleHandle               = fake_DrvGetModuleHandle
     GetDriverModuleHandle            = fake_GetDriverModuleHandle
+	joyConfigChanged                 = fake_joyConfigChanged
     joyGetDevCapsA                   = fake_joyGetDevCapsA
     joyGetDevCapsW                   = fake_joyGetDevCapsW
     joyGetNumDevs                    = fake_joyGetNumDevs
