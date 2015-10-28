@@ -82,7 +82,7 @@ int player_main()
 
         //stop if at end of 'playlist'
         //note "last" track is NON-inclusive
-        if (current > last)
+        if (current == last)
             playing = 0;
 
         //try to play song
@@ -384,7 +384,7 @@ MCIERROR WINAPI fake_mciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR 
                         // FIXME: use better matching
                         if (tracks[i].position + tracks[i].length > parms->dwFrom / 1000)
                         {
-                            info.last = i;
+                            info.last = i+1; // FIXME: Temporal fix for 1 Track CDs
                             break;
                         }
                     }
@@ -397,7 +397,7 @@ MCIERROR WINAPI fake_mciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR 
                 if (info.last < info.first)
                     info.last = info.first;
 
-                if (info.last > lastTrack)
+                if (info.last > lastTrack+1) // FIXME: Temporal fix for 1 Track CDs
                     info.last = lastTrack;
             }
 
