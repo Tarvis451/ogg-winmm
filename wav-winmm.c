@@ -16,6 +16,7 @@
 
 #include <windows.h>
 #include <stdio.h>
+#include <ctype.h>
 #include <dirent.h>
 #include "player.h"
 
@@ -81,7 +82,8 @@ int player_main()
 
         //stop if at end of 'playlist'
         //note "last" track is NON-inclusive
-        if (current == last)
+		//if the "first" track equals "last" track then play that single track
+        if (first == last && current > last || first != last && current == last)
             playing = 0;
 
         //try to play song
@@ -524,61 +526,267 @@ MCIERROR WINAPI fake_mciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR 
     return MCIERR_UNRECOGNIZED_COMMAND;
 }
 
+/*	
+# LIST OF ALL POSSIBLE mciSendString COMMANDS (mark with "-" partially or completely implemented functions)#
+break
+capability
+capture
+-close
+configure
+copy
+cue
+cut
+delete
+escape
+freeze
+index
+info
+list
+load
+mark
+monitor
+-open
+paste
+pause
+-play
+put
+quality
+realize
+record
+reserve
+restore
+resume
+save
+seek
+-set
+setaudio
+settimecode
+settuner
+setvideo
+signal
+spin
+status
+step
+-stop
+sysinfo
+undo
+unfreeze
+update
+where
+window
+*/	
+
 // this is really fugly but for christ sake why did anyone use it?!
 MCIERROR WINAPI fake_mciSendStringA(LPCTSTR cmd, LPTSTR ret, UINT cchReturn, HANDLE hwndCallback)
 {
-    printf("MCI: %s\n", cmd);
+    dprintf("MCI-SendStringA: %s\n", cmd);
 
-    if (strstr(cmd, "sysinfo"))
-    {
+	// Change string to lower-case
+	char *cmdbuf = strdup(cmd); // Prevents cmd readonly error
+	for (int i = 0; cmdbuf[i]; i++) {
+		cmdbuf[i] = tolower(cmdbuf[i]);
+	}
+	
+	// Explode string into tokens
+	dprintf("Splitting string \"%s\" into tokens:\n", cmdbuf);
+	char * com;
+	com = strtok(cmdbuf, " ,.-");
+	
+	// -- Implement Commands --
+	
+	// OPEN
+	if (com && strcmp(com, "open") == 0) { // TODO: 
+		return 0;
+	}
+	
+	// SET
+	if (com && strcmp(com, "set") == 0) {
+		com = strtok(NULL, " ,.-"); // Get next token
+		if(com){ // TODO: FIX: Accept everything. This may bring unexpected behaviour
+			com = strtok(NULL, " ,.-"); // Get next token
+			
+			// TIME
+			if (com && strcmp(com, "time") == 0) { 
+				com = strtok(NULL, " ,.-"); // Get next token
+				
+				// FORMAT
+				if (com && strcmp(com, "format") == 0) { 
+					com = strtok(NULL, " ,.-"); // Get next token
+					static MCI_SET_PARMS parms;
+					
+					// MILLISECONDS
+					if (com && strcmp(com, "milliseconds") == 0) {
+						parms.dwTimeFormat = MCI_FORMAT_MILLISECONDS;
+						fake_mciSendCommandA(MAGIC_DEVICEID, MCI_SET, MCI_SET_TIME_FORMAT, (DWORD_PTR)&parms);
+						return 0;
+					}
+					
+					// MSF
+					if (com && strcmp(com, "msf") == 0) {
+						parms.dwTimeFormat = MCI_FORMAT_MSF;
+						fake_mciSendCommandA(MAGIC_DEVICEID, MCI_SET, MCI_SET_TIME_FORMAT, (DWORD_PTR)&parms);
+						return 0;
+					}
+					
+					// TMSF
+					if (com && strcmp(com, "tmsf") == 0) {
+						parms.dwTimeFormat = MCI_FORMAT_TMSF;
+						fake_mciSendCommandA(MAGIC_DEVICEID, MCI_SET, MCI_SET_TIME_FORMAT, (DWORD_PTR)&parms);
+						return 0;
+					}
+				}
+			}
+		}
+		
+		// Accept all other commands
+		return 0;
+	}
+	
+	// STATUS
+	if (com && strcmp(com, "status") == 0) {
+		com = strtok(NULL, " ,.-"); // Get next token
+		
+		if(com){ // TODO: FIX: Accept everything. This may bring unexpected behaviour
+			com = strtok(NULL, " ,.-"); // Get next token
+			MCI_STATUS_PARMS parms;
+
+			// LENGTH
+			if (com && strcmp(com, "length") == 0) {
+				parms.dwItem = MCI_STATUS_LENGTH;
+				com = strtok(NULL, " ,.-"); // Get next token
+				
+				// TRACK
+				if (com && strcmp(com, "track") == 0) {
+					com = strtok(NULL, " ,.-"); // Get next token (TRACK NUMBER)
+					
+					// (INT) TRACK NUMBER
+					if(com){ // TODO: Check if this is an INTEGER (Number)
+						parms.dwTrack = atoi(com);
+						fake_mciSendCommandA(MAGIC_DEVICEID, MCI_STATUS, MCI_STATUS_ITEM, (DWORD_PTR)&parms);
+						itoa(parms.dwReturn, ret, 10); // Response
+						return 0;
+					}	
+				}
+				
+				return 0;
+			}
+		
+			// POSITION
+			if (com && strcmp(com, "position") == 0) {
+				parms.dwItem = MCI_STATUS_POSITION;
+				com = strtok(NULL, " ,.-"); // Get next token
+				
+				// TRACK
+				if (com && strcmp(com, "track") == 0) {
+					com = strtok(NULL, " ,.-"); // Get next token (TRACK NUMBER)
+					
+					// (INT) TRACK NUMBER
+					if(com){ // TODO: Check if this is an INTEGER (Number)
+						parms.dwTrack = atoi(com);
+						fake_mciSendCommandA(MAGIC_DEVICEID, MCI_STATUS, MCI_STATUS_ITEM|MCI_TRACK, (DWORD_PTR)&parms);
+						itoa(parms.dwReturn, ret, 10); // Response
+						return 0;
+					}	
+				}
+				
+				return 0;
+			}
+			
+			// NUMBER
+			if (com && strcmp(com, "number") == 0) {
+				com = strtok(NULL, " ,.-"); // Get next token
+
+				// OF
+				if (com && strcmp(com, "of") == 0) {
+					com = strtok(NULL, " ,.-"); // Get next token
+
+					// TRACKS
+					if (com && strcmp(com, "tracks") == 0) {
+						itoa(numTracks, ret, 10); // Response
+						return 0;
+					}   
+				}
+
+				return 0;
+			}
+		}
+		
+		// Accept all other commands
+		return 0;
+	}	
+	
+	// PLAY
+	if (com && strcmp(com, "play") == 0) {
+		com = strtok(NULL, " ,.-"); // Get next token
+		
+		if(com){ // TODO: FIX: Accept everything. This may bring unexpected behaviour
+			com = strtok(NULL, " ,.-"); // Get next token
+
+			// FROM
+			if (com && strcmp(com, "from") == 0) {
+				com = strtok(NULL, " ,.-"); // Get next token (FROM POS (INT))
+				
+				// (INT) From Time
+				if(com){ // TODO: Check if number is INTEGER
+					
+					int posFrom = atoi(com);// Parse Integer
+					
+					com = strtok(NULL, " ,.-"); // Get next token
+					
+					// TO
+					if (com && strcmp(com, "to") == 0) {
+						com = strtok(NULL, " ,.-"); // Get next token (TO POS (INT)))
+							
+							// (INT) To Time
+							if(com){
+								int posTo = atoi(com); // Parse Integer
+							
+								static MCI_PLAY_PARMS parms;
+								parms.dwFrom = posFrom;
+								parms.dwTo = posTo;
+								fake_mciSendCommandA(MAGIC_DEVICEID, MCI_PLAY, MCI_FROM|MCI_TO, (DWORD_PTR)&parms);
+								//free(posFrom); // ???
+								//free(posTo); // ???
+								return 0;
+							}
+					}else{
+						// No TO position specified
+						static MCI_PLAY_PARMS parms;
+						parms.dwFrom = posFrom;
+						fake_mciSendCommandA(MAGIC_DEVICEID, MCI_PLAY, MCI_FROM, (DWORD_PTR)&parms);
+						return 0;
+					}
+				}
+			}
+		}
+		
+		// Accept all other commands
+		return 0;
+	}
+	
+	// STOP
+	if (com && strcmp(com, "stop") == 0) {
+		// TODO: No support for ALIASES
+		fake_mciSendCommandA(MAGIC_DEVICEID, MCI_STOP, 0, (DWORD_PTR)NULL);
+        return 0;
+	}
+	
+	// CLOSE
+	if (com && strcmp(com, "close") == 0) {
+		// TODO: No support for ALIASES
+		fake_mciSendCommandA(MAGIC_DEVICEID, MCI_CLOSE, 0, (DWORD_PTR)NULL);
+        return 0;
+	}
+
+	// TODO: Unfinished. Dunno what this does.. 
+    if (strstr(cmd, "sysinfo")){
         strcpy(ret, "cd");
         return 0;
     }
-
-    if (strstr(cmd, "stop cd") || strstr(cmd, "stop cdaudio"))
-    {
-        fake_mciSendCommandA(MAGIC_DEVICEID, MCI_STOP, 0, (DWORD_PTR)NULL);
-        return 0;
-    }
-
-    if (strstr(cmd, "set cd time format") || strstr(cmd, "set cdaudio time format"))
-    {
-        static MCI_SET_PARMS parms;
-        if (strstr(cmd, "tmsf"))
-            parms.dwTimeFormat = MCI_FORMAT_TMSF;
-        else if (strstr(cmd, "msf"))
-            parms.dwTimeFormat = MCI_FORMAT_MSF;
-        else if (strstr(cmd, "milliseconds"))
-            parms.dwTimeFormat = MCI_FORMAT_MILLISECONDS;
-
-        fake_mciSendCommandA(MAGIC_DEVICEID, MCI_SET, MCI_SET_TIME_FORMAT, (DWORD_PTR)&parms);
-        return 0;
-    }
-
-    if (strstr(cmd, "status cd number of tracks") || strstr(cmd, "status cdaudio number of tracks"))
-    {
-        _itoa(numTracks, ret, 10);
-        return 0;
-    }
-
-    int from = -1, to = -1;
-    if (sscanf(cmd, "play cd from %d to %d", &from, &to) == 2 || sscanf(cmd, "play cdaudio from %d to %d", &from, &to) == 2)
-    {
-        static MCI_PLAY_PARMS parms;
-        parms.dwFrom = from;
-        parms.dwTo = to;
-        fake_mciSendCommandA(MAGIC_DEVICEID, MCI_PLAY, MCI_FROM | MCI_TO, (DWORD_PTR)&parms);
-        return 0;
-    }
-
-    if (sscanf(cmd, "play cd from %d", &from) == 1 || sscanf(cmd, "play cdaudio from %d", &from) == 1)
-    {
-        static MCI_PLAY_PARMS parms;
-        parms.dwFrom = from;
-        fake_mciSendCommandA(MAGIC_DEVICEID, MCI_PLAY, MCI_FROM, (DWORD_PTR)&parms);
-        return 0;
-    }
-
+	
+	/* This could be useful if this would be 100% implemented */
+	// return MCIERR_UNRECOGNIZED_COMMAND;
+	
     return 0;
 }
 
