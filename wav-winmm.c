@@ -75,6 +75,9 @@ int player_main()
         {
             first = info.first;
             last = info.last;
+            // Force last to be NON-inclusive.
+            if (last == first)
+                last++;
             current = first;
             updateTrack = 0;
         }
@@ -500,6 +503,7 @@ MCIERROR WINAPI fake_mciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR 
                 if (parms->dwItem == MCI_STATUS_READY)
                 {
                     dprintf("      MCI_STATUS_READY\r\n");
+                    parms->dwReturn = (numTracks > 0);
                 }
 
                 if (parms->dwItem == MCI_STATUS_TIME_FORMAT)
