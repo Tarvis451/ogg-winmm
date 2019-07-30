@@ -388,7 +388,7 @@ MCIERROR WINAPI fake_mciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR 
                     for (int i = info.first; i < MAX_TRACKS; i++)
                     {
                         // FIXME: use better matching
-                        if (tracks[i].position + tracks[i].length > parms->dwFrom / 1000)
+                        if (tracks[i].position + tracks[i].length > parms->dwTo / 1000)
                         {
                             info.last = i;
                             break;
