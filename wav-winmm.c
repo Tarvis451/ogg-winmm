@@ -75,6 +75,9 @@ int player_main()
         {
             first = info.first;
             last = info.last;
+            // Force last to be NON-inclusive.
+            if (last == first)
+                last++;
             current = first;
             updateTrack = 0;
         }
@@ -324,7 +327,9 @@ MCIERROR WINAPI fake_mciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR 
                 // FIXME: rounding to nearest track
                 if (time_format == MCI_FORMAT_TMSF)
                 {
-                    info.first = MCI_TMSF_TRACK(parms->dwFrom);
+                    // When dwFrom is 0, keep previously set info.
+                    if (parms->dwFrom)
+                        info.first = MCI_TMSF_TRACK(parms->dwFrom);
 
                     dprintf("      TRACK  %d\n", MCI_TMSF_TRACK(parms->dwFrom));
                     dprintf("      MINUTE %d\n", MCI_TMSF_MINUTE(parms->dwFrom));
@@ -367,7 +372,9 @@ MCIERROR WINAPI fake_mciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR 
 
                 if (time_format == MCI_FORMAT_TMSF)
                 {
-                    info.last = MCI_TMSF_TRACK(parms->dwTo);
+                    // When dwTo is 0, keep previously set info.
+                    if (parms->dwTo)
+                        info.last = MCI_TMSF_TRACK(parms->dwTo);
 
                     dprintf("      TRACK  %d\n", MCI_TMSF_TRACK(parms->dwTo));
                     dprintf("      MINUTE %d\n", MCI_TMSF_MINUTE(parms->dwTo));
@@ -381,7 +388,7 @@ MCIERROR WINAPI fake_mciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR 
                     for (int i = info.first; i < MAX_TRACKS; i++)
                     {
                         // FIXME: use better matching
-                        if (tracks[i].position + tracks[i].length > parms->dwFrom / 1000)
+                        if (tracks[i].position + tracks[i].length > parms->dwTo / 1000)
                         {
                             info.last = i;
                             break;
@@ -393,11 +400,12 @@ MCIERROR WINAPI fake_mciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR 
                 else
                     info.last = parms->dwTo;
 
-                if (info.last < info.first)
-                    info.last = info.first;
+                // Keep info.last NON-inclusive.
+                if (info.last <= info.first)
+                    info.last = info.first + 1;
 
-                if (info.last > lastTrack)
-                    info.last = lastTrack;
+                if (info.last > lastTrack + 1)
+                    info.last = lastTrack + 1;
             }
 
             if (info.first && (fdwCommand & MCI_FROM))
@@ -500,6 +508,7 @@ MCIERROR WINAPI fake_mciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR 
                 if (parms->dwItem == MCI_STATUS_READY)
                 {
                     dprintf("      MCI_STATUS_READY\r\n");
+                    parms->dwReturn = (numTracks > 0);
                 }
 
                 if (parms->dwItem == MCI_STATUS_TIME_FORMAT)
