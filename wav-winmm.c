@@ -75,6 +75,9 @@ int player_main()
         {
             first = info.first;
             last = info.last;
+            // Force last to be NON-inclusive.
+            if (last == first)
+                last++;
             current = first;
             updateTrack = 0;
         }
