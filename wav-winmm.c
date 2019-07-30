@@ -327,7 +327,9 @@ MCIERROR WINAPI fake_mciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR 
                 // FIXME: rounding to nearest track
                 if (time_format == MCI_FORMAT_TMSF)
                 {
-                    info.first = MCI_TMSF_TRACK(parms->dwFrom);
+                    // When dwFrom is 0, keep previously set info.
+                    if (parms->dwFrom)
+                        info.first = MCI_TMSF_TRACK(parms->dwFrom);
 
                     dprintf("      TRACK  %d\n", MCI_TMSF_TRACK(parms->dwFrom));
                     dprintf("      MINUTE %d\n", MCI_TMSF_MINUTE(parms->dwFrom));
@@ -370,7 +372,9 @@ MCIERROR WINAPI fake_mciSendCommandA(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR 
 
                 if (time_format == MCI_FORMAT_TMSF)
                 {
-                    info.last = MCI_TMSF_TRACK(parms->dwTo);
+                    // When dwTo is 0, keep previously set info.
+                    if (parms->dwTo)
+                        info.last = MCI_TMSF_TRACK(parms->dwTo);
 
                     dprintf("      TRACK  %d\n", MCI_TMSF_TRACK(parms->dwTo));
                     dprintf("      MINUTE %d\n", MCI_TMSF_MINUTE(parms->dwTo));
